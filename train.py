@@ -5,12 +5,10 @@ import os
 
 from voc import MAX_LENGTH, SOS_token
 from prepare_data import batch2TrainData
-from model_config import hidden_size
+from model_config import hidden_size, device
 from train_config import clip, teacher_forcing_ratio, learning_rate, decoder_learning_ratio
 from train_config import n_iteration, print_every, save_every
 
-USE_CUDA = torch.cuda.is_available()
-device = torch.device("cuda" if USE_CUDA else "cpu")
 teacher_forcing_ratio = 1.0
 
 def maskNLLLoss(inp, target, mask):

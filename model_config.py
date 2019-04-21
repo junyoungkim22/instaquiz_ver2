@@ -1,3 +1,5 @@
+import torch
+
 model_name = 'cb_model'
 attn_model = 'dot'
 #attn_model = 'general'
@@ -14,3 +16,6 @@ checkpoint_iter = 4000
 #loadFilename = os.path.join(save_dir, model_name, corpus_name,
 #                            '{}-{}_{}'.format(encoder_n_layers, decoder_n_layers, hidden_size),
 #                            '{}_checkpoint.tar'.format(checkpoint_iter))
+
+USE_CUDA = torch.cuda.is_available()
+device = torch.device("cuda" if USE_CUDA else "cpu")
