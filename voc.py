@@ -52,7 +52,8 @@ class Voc:
         for word in keep_words:
             self.addWord(word)
 
-MAX_LENGTH = 10  # Maximum sentence length to consider
+MAX_INPUT_LENGTH = 100  # Maximum sentence length to consider
+MAX_OUTPUT_LENGTH = 30
 
 # Turn a Unicode string to plain ASCII, thanks to
 # https://stackoverflow.com/a/518232/2809427
@@ -75,7 +76,7 @@ def readVocs(datafile, corpus_name):
     print("Reading lines...")
     # Read the file and split into lines
     lines = open(datafile, encoding='utf-8').\
-        read().strip().split('\n')
+        read().strip().split('\n\n')
     # Split every line into pairs and normalize
     pairs = [[normalizeString(s) for s in l.split('\t')] for l in lines]
     voc = Voc(corpus_name)
@@ -84,7 +85,7 @@ def readVocs(datafile, corpus_name):
 # Returns True iff both sentences in a pair 'p' are under the MAX_LENGTH threshold
 def filterPair(p):
     # Input sequences need to preserve the last word for EOS token
-    return len(p[0].split(' ')) < MAX_LENGTH and len(p[1].split(' ')) < MAX_LENGTH
+    return len(p[0].split(' ')) < MAX_INPUT_LENGTH and len(p[1].split(' ')) < MAX_OUTPUT_LENGTH
 
 # Filter pairs using filterPair condition
 def filterPairs(pairs):
