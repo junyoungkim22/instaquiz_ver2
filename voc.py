@@ -54,6 +54,7 @@ class Voc:
 
 MAX_INPUT_LENGTH = 100  # Maximum sentence length to consider
 MAX_OUTPUT_LENGTH = 30
+MAX_LENGTH = 100
 
 # Turn a Unicode string to plain ASCII, thanks to
 # https://stackoverflow.com/a/518232/2809427
