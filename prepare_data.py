@@ -1,9 +1,17 @@
 import torch
 import itertools
-from voc import PAD_token, EOS_token
+from voc import PAD_token, EOS_token, UNK_token
 
 def indexesFromSentence(voc, sentence):
-    return [voc.word2index[word] for word in sentence.split(' ')] + [EOS_token]
+    #return [voc.word2index[word] for word in sentence.split(' ')] + [EOS_token]
+    indexes = []
+    for word in sentence.split(' '):
+        if word in voc.word2index:
+            indexes.append(voc.word2index[word])
+        else:
+            indexes.append(UNK_token)
+    indexes.append(EOS_token)
+    return indexes
 
 def zeroPadding(l, fillvalue=PAD_token):
     return list(itertools.zip_longest(*l, fillvalue=fillvalue))
