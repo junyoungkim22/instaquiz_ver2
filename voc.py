@@ -1,5 +1,8 @@
 import unicodedata
 import re
+
+from squad_loader import process_file
+
 # Default word tokens
 PAD_token = 0  # Used for padding short sentences
 SOS_token = 1  # Start-of-sentence token
@@ -81,8 +84,9 @@ def readVocs(datafile, corpus_name):
         read().strip().split('\n\n')
     # Split every line into pairs and normalize
     pairs = [[normalizeString(s) for s in l.split('\t')] for l in lines]
-    voc = Voc(corpus_name)
-    return voc, pairs
+    #voc = Voc(corpus_name)
+    return pairs
+    #return voc, pairs
 
 # Returns True iff both sentences in a pair 'p' are under the MAX_LENGTH threshold
 def filterPair(p):
@@ -96,16 +100,20 @@ def filterPairs(pairs):
 # Using the functions defined above, return a populated voc object and pairs list
 def loadPrepareData(corpus, corpus_name, datafile, save_dir):
     print("Start preparing training data ...")
-    voc, pairs = readVocs(datafile, corpus_name)
+    #voc, pairs = readVocs(datafile, corpus_name)
+    pairs = readVocs(datafile, corpus_name)
     print("Read {!s} sentence pairs".format(len(pairs)))
     pairs = filterPairs(pairs)
     print("Trimmed to {!s} sentence pairs".format(len(pairs)))
     print("Counting words...")
+    '''
     for pair in pairs:
         voc.addSentence(pair[0])
         voc.addSentence(pair[1])
     print("Counted words:", voc.num_words)
-    return voc, pairs
+    '''
+    #return voc, pairs
+    return pairs
 
 MIN_COUNT = 3    # Minimum word count threshold for trimming
 
@@ -136,3 +144,12 @@ def trimRareWords(voc, pairs, MIN_COUNT):
 
     print("Trimmed from {} pairs to {}, {:.4f} of total".format(len(pairs), len(keep_pairs), len(keep_pairs) / len(pairs)))
     return keep_pairs
+
+def makeVoc(corpus_name):
+    voc = Voc(corpus_name)
+    data = process_file("train-v2.0.json")
+    for context, context_qas in data:
+        for question, answers in context_qas:
+            voc.addSentence(normalizeString(question))
+        voc.addSentence(normalizeString(context)) 
+    return voc
