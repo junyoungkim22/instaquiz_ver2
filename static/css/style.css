@@ -1,0 +1,13 @@
+h1 {
+	font-size:50px;
+}
+#user_input {
+	width:100%;
+}
+#quiz_button {
+	background-color: #4CAF50;
+	height:80px;
+	width:150px;
+	float:right;
+	font-size:30px;
+}

@@ -1,0 +1,18 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body>
+	<header>
+		<h1>Instaquiz</h1>
+	</header>
+	<form action = "http://localhost:5000/quiz" method = "post">
+		<h2>Please enter quiz material!</h2>
+		<textarea rows="4" cols="50" name = 'quiz_material' id="user_input"></textarea>
+		<br />
+		<input type="submit" value="Quiz Me!" id="quiz_button" />
+	</form>
+</body>
+</html>
