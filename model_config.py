@@ -1,4 +1,5 @@
 import torch
+import os
 
 model_name = 'cb_model'
 attn_model = 'dot'
@@ -9,13 +10,15 @@ encoder_n_layers = 2
 decoder_n_layers = 2
 dropout = 0.1
 batch_size = 64
+save_dir = os.path.join("data", "save")
+corpus_name = "squad"
 
 # Set checkpoint to load from; set to None if starting from scratch
 loadFilename = None
-checkpoint_iter = 4000
-#loadFilename = os.path.join(save_dir, model_name, corpus_name,
-#                            '{}-{}_{}'.format(encoder_n_layers, decoder_n_layers, hidden_size),
-#                            '{}_checkpoint.tar'.format(checkpoint_iter))
+checkpoint_iter = 3000
+loadFilename = os.path.join(save_dir, model_name, corpus_name,
+                            '{}-{}_{}'.format(encoder_n_layers, decoder_n_layers, hidden_size),
+                            '{}_checkpoint.tar'.format(checkpoint_iter))
 
 USE_CUDA = torch.cuda.is_available()
 device = torch.device("cuda" if USE_CUDA else "cpu")
