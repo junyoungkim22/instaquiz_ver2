@@ -11,3 +11,9 @@ h1 {
 	float:right;
 	font-size:30px;
 }
+#restart_button {
+	background-color: #4CAF50;
+	height:80px;
+	width:250px;
+	float:right;
+}

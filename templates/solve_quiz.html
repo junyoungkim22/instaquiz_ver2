@@ -1,0 +1,20 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="utf-8">
+	<link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='css/style.css') }}"/>
+</head>
+<body>
+	<header>
+		<h1>Instaquiz</h1>
+	</header>
+    <br />
+    {% for question, answer in qa_pairs %}
+        <p>{{ question }} </p>
+        <h2 onclick="this.innerHTML='{{ answer }}'">?????????????</h2>
+    {% endfor %}
+    <form action="http://localhost:5000/input">
+        <input type="submit" value="Another Quiz!" id="restart_button" style="font-size:20px" />
+    </form>
+</body>
+</html>
