@@ -1,6 +1,7 @@
 import torch
 import itertools
-from voc import PAD_token, EOS_token, UNK_token
+from voc import PAD_token, EOS_token, UNK_token, normalizeString
+from squad_loader import ANSS_TAG, ANSE_TAG
 
 def indexesFromSentence(voc, sentence):
     #return [voc.word2index[word] for word in sentence.split(' ')] + [EOS_token]
@@ -27,13 +28,44 @@ def binaryMatrix(l, value=PAD_token):
                 m[i].append(1)
     return m
 
+# Returns mask for tagging answers
+def ansMask(l):
+    ret = []
+    for sentence in l:
+        mask = []
+        ans_flag = False
+        for word in sentence.split(' '):
+            if not ans_flag:
+                if word != ANSS_TAG:
+                    mask.append(0)
+                else:
+                    ans_flag = True
+            else:
+                if word != ANSE_TAG:
+                    mask.append(1)
+                else:
+                    ans_flag = False
+        ret.append(mask)
+    return ret
+
+
 # Returns padded input sequence tensor and lengths
 def inputVar(l, voc):
-    indexes_batch = [indexesFromSentence(voc, sentence) for sentence in l]
+    ansMaskList = ansMask(l)
+    no_ans_l = []
+    for sentence in l:
+        s1 = sentence.replace(ANSS_TAG, '')
+        s2 = s1.replace(ANSE_TAG, '')
+        s3 = normalizeString(s2)
+        no_ans_l.append(s3)
+    indexes_batch = [indexesFromSentence(voc, sentence) for sentence in no_ans_l]
     lengths = torch.tensor([len(indexes) for indexes in indexes_batch])
     padList = zeroPadding(indexes_batch)
     padVar = torch.LongTensor(padList)
-    return padVar, lengths
+
+    answerMaskList = zeroPadding(ansMaskList)
+    answerMask = torch.LongTensor(answerMaskList)
+    return padVar, lengths, answerMask
 
 # Returns padded target sequence tensor, padding mask, and max target length
 def outputVar(l, voc):
@@ -52,6 +84,6 @@ def batch2TrainData(voc, pair_batch):
     for pair in pair_batch:
         input_batch.append(pair[0])
         output_batch.append(pair[1])
-    inp, lengths = inputVar(input_batch, voc)
+    inp, lengths, answerMask = inputVar(input_batch, voc)
     output, mask, max_target_len = outputVar(output_batch, voc)
-    return inp, lengths, output, mask, max_target_len
+    return inp, lengths, output, mask, max_target_len, answerMask

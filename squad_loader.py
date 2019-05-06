@@ -10,6 +10,8 @@ https://github.com/deepakkumar1984/QANet2/blob/master/prepro.py
 '''
 
 nlp = spacy.blank("en")
+ANSS_TAG = "1anss1"
+ANSE_TAG = "1anse1"
 
 def word_tokenize(sent):
     doc = nlp(sent)
@@ -39,46 +41,44 @@ def process_file(file_name):
         print("Processing done!")
         return ret
 
-def prepare_par_pairs():
+def prepare_par_pairs(data):
     pairs = []
-    data = process_file("train-v2.0.json")
     for context, context_qas in data:
         for question, answers in context_qas:
             for ans_txt, (answer_start, answer_end) in answers:
                 pairs.append((context, question))
     return pairs
 
-def prepare_sent_pairs():
-    pairs = prepare_ans_sent_pairs()
+def prepare_sent_pairs(data):
+    pairs = prepare_ans_sent_pairs(data)
     new_pairs = []
     for pair in pairs:
         context, question = pair
-        new_context = context.replace('<anss>', '')
-        new_context = new_context.replace('<anse>', '')
+        new_context = context.replace(ANSS_TAG, '')
+        new_context = new_context.replace(ANSE_TAG, '')
         new_pairs.append((new_context, question))
     return new_pairs
 
-def prepare_ans_tagged_pairs():
+def prepare_ans_tagged_pairs(data):
     pairs = []
-    data = process_file("train-v2.0.json")
     for context, context_qas in data:
         for question, answers in context_qas:
             for ans_txt, (answer_start, answer_end) in answers:
-                tagged_context = context[:answer_end] + " <anse> " + context[answer_end:]
-                tagged_context = tagged_context[:answer_start] + " <anss> " + tagged_context[answer_start:]
+                tagged_context = context[:answer_end] + " " + ANSE_TAG + " " + context[answer_end:]
+                tagged_context = tagged_context[:answer_start] + " " + ANSS_TAG + " " + tagged_context[answer_start:]
                 pairs.append((tagged_context, question))
     return pairs
 
-def prepare_ans_sent_pairs():
-    pairs = prepare_ans_tagged_pairs()
+def prepare_ans_sent_pairs(data):
+    pairs = prepare_ans_tagged_pairs(data)
     new_pairs = []
     for pair in pairs:
         context, question = pair
         new_sentences = []
         for sent in context.split('.'):
-            if "<anss>" in sent:
+            if ANSS_TAG in sent:
                 new_sentences.append(sent)
-            elif "<anse>" in sent:
+            elif ANSE_TAG in sent:
                 new_sentences.append(sent)
         new_context = ' '.join(new_sentences)
         new_pairs.append((new_context, question))
