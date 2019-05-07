@@ -15,7 +15,7 @@ corpus_name = "squad"
 
 # Set checkpoint to load from; set to None if starting from scratch
 loadFilename = None
-checkpoint_iter = 8000
+checkpoint_iter = 15000
 loadFilename = os.path.join(save_dir, model_name, corpus_name,
                             '{}-{}_{}'.format(encoder_n_layers, decoder_n_layers, hidden_size),
                             '{}_checkpoint.tar'.format(checkpoint_iter))

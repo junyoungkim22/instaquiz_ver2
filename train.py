@@ -6,7 +6,7 @@ import numpy as np
 
 from voc import MAX_LENGTH, SOS_token
 from prepare_data import batch2TrainData
-from model_config import hidden_size, device, batch_size
+from model_config import hidden_size, device, batch_size, checkpoint_iter
 from train_config import clip, teacher_forcing_ratio, learning_rate, decoder_learning_ratio
 from train_config import n_iteration, print_every, save_every
 
@@ -103,6 +103,7 @@ def trainIters(model_name, voc, pairs, encoder, decoder, encoder_optimizer, deco
     start_iteration = 1
     print_loss = 0
     if loadFilename:
+        checkpoint = torch.load(loadFilename)
         start_iteration = checkpoint['iteration'] + 1
 
     # Training loop
