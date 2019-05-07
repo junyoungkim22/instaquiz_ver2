@@ -1,3 +1,4 @@
+import torch
 import torch.nn as nn
 
 class EncoderRNN(nn.Module):
@@ -9,14 +10,19 @@ class EncoderRNN(nn.Module):
 
         # Initialize GRU; the input_size and hidden_size params are both set to 'hidden_size'
         #   because our input size is a word embedding with number of features == hidden_size
-        self.gru = nn.GRU(hidden_size, hidden_size, n_layers,
+        self.gru = nn.GRU(hidden_size + 1, hidden_size, n_layers,
                           dropout=(0 if n_layers == 1 else dropout), bidirectional=True)
 
-    def forward(self, input_seq, input_lengths, hidden=None):
+    def forward(self, input_seq, input_lengths, answer_mask, hidden=None):
         # Convert word indexes to embeddings
         embedded = self.embedding(input_seq)
+
+        # Append answer bit if part of answer (1 if part of answer, 0 if not)
+        answer_mask = answer_mask.unsqueeze(2)
+        ans_embedded = torch.cat((embedded, answer_mask), 2) 
+
         # Pack padded batch of sequences for RNN module
-        packed = nn.utils.rnn.pack_padded_sequence(embedded, input_lengths)
+        packed = nn.utils.rnn.pack_padded_sequence(ans_embedded, input_lengths)
         # Forward pass through GRU
         outputs, hidden = self.gru(packed, hidden)
         # Unpack padding

@@ -32,21 +32,26 @@ def binaryMatrix(l, value=PAD_token):
 def ansMask(l):
     ret = []
     for sentence in l:
-        mask = []
-        ans_flag = False
-        for word in sentence.split(' '):
-            if not ans_flag:
-                if word != ANSS_TAG:
-                    mask.append(0)
-                else:
-                    ans_flag = True
-            else:
-                if word != ANSE_TAG:
-                    mask.append(1)
-                else:
-                    ans_flag = False
-        ret.append(mask)
+        ret.append(ansSentMask(sentence))
     return ret
+
+def ansSentMask(sentence):
+    mask = []
+    ans_flag = False
+    for word in sentence.split(' '):
+        if not ans_flag:
+            if word != ANSS_TAG:
+                mask.append(0)
+            else:
+                ans_flag = True
+        else:
+            if word != ANSE_TAG:
+                mask.append(1)
+            else:
+                ans_flag = False
+    # Append 0 for EOS tag
+    mask.append(0)
+    return mask
 
 
 # Returns padded input sequence tensor and lengths
@@ -64,7 +69,7 @@ def inputVar(l, voc):
     padVar = torch.LongTensor(padList)
 
     answerMaskList = zeroPadding(ansMaskList)
-    answerMask = torch.LongTensor(answerMaskList)
+    answerMask = torch.FloatTensor(answerMaskList)
     return padVar, lengths, answerMask
 
 # Returns padded target sequence tensor, padding mask, and max target length

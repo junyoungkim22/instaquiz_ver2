@@ -1,10 +1,11 @@
 import torch
 import torch.nn as nn
 
-from prepare_data import indexesFromSentence
+from prepare_data import indexesFromSentence, ansSentMask
 from voc import normalizeString
 from voc import MAX_LENGTH, SOS_token
 from model_config import device
+from squad_loader import ANSS_TAG, ANSE_TAG
 
 class GreedySearchDecoder(nn.Module):
     def __init__(self, encoder, decoder):
@@ -12,9 +13,9 @@ class GreedySearchDecoder(nn.Module):
         self.encoder = encoder
         self.decoder = decoder
 
-    def forward(self, input_seq, input_length, max_length):
+    def forward(self, input_seq, input_length, max_length, answerMask):
         # Forward input through encoder model
-        encoder_outputs, encoder_hidden = self.encoder(input_seq, input_length)
+        encoder_outputs, encoder_hidden = self.encoder(input_seq, input_length, answerMask)
         # Prepare encoder's final hidden layer to be first hidden input to the decoder
         decoder_hidden = encoder_hidden[:self.decoder.n_layers]
         # Initialize decoder input with SOS_token
@@ -38,17 +39,25 @@ class GreedySearchDecoder(nn.Module):
 
 def evaluate(encoder, decoder, searcher, voc, sentence, max_length=MAX_LENGTH):
     ### Format input sentence as a batch
+    # Get answer mask
+    ans_mask_list_batch = [ansSentMask(sentence)]
+    # Remove answer tags
+    sentence = sentence.replace(ANSS_TAG, ' ')
+    sentence = sentence.replace(ANSE_TAG, ' ')
+    sentence = normalizeString(sentence)
     # words -> indexes
     indexes_batch = [indexesFromSentence(voc, sentence)]
     # Create lengths tensor
     lengths = torch.tensor([len(indexes) for indexes in indexes_batch])
     # Transpose dimensions of batch to match models' expectations
     input_batch = torch.LongTensor(indexes_batch).transpose(0, 1)
+    ans_mask_input_batch = torch.FloatTensor(ans_mask_list_batch).transpose(0, 1)
     # Use appropriate device
     input_batch = input_batch.to(device)
     lengths = lengths.to(device)
+    ans_mask_input_batch = ans_mask_input_batch.to(device)
     # Decode sentence with searcher
-    tokens, scores = searcher(input_batch, lengths, max_length)
+    tokens, scores = searcher(input_batch, lengths, max_length, ans_mask_input_batch)
     # indexes -> words
     decoded_words = [voc.index2word[token.item()] for token in tokens]
     return decoded_words

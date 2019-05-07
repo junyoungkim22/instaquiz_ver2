@@ -2,10 +2,11 @@ import torch
 import torch.nn as nn
 import random
 import os
+import numpy as np
 
 from voc import MAX_LENGTH, SOS_token
 from prepare_data import batch2TrainData
-from model_config import hidden_size, device
+from model_config import hidden_size, device, batch_size
 from train_config import clip, teacher_forcing_ratio, learning_rate, decoder_learning_ratio
 from train_config import n_iteration, print_every, save_every
 
@@ -19,7 +20,7 @@ def maskNLLLoss(inp, target, mask):
     return loss, nTotal.item()
 
 def train(input_variable, lengths, target_variable, mask, max_target_len, encoder, decoder, embedding,
-          encoder_optimizer, decoder_optimizer, batch_size, clip, max_length=MAX_LENGTH):
+          encoder_optimizer, decoder_optimizer, batch_size, clip, answer_mask, max_length=MAX_LENGTH):
 
     # Zero gradients
     encoder_optimizer.zero_grad()
@@ -30,6 +31,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
     lengths = lengths.to(device)
     target_variable = target_variable.to(device)
     mask = mask.to(device)
+    answer_mask = answer_mask.to(device)
 
     # Initialize variables
     loss = 0
@@ -37,7 +39,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
     n_totals = 0
 
     # Forward pass through encoder
-    encoder_outputs, encoder_hidden = encoder(input_variable, lengths)
+    encoder_outputs, encoder_hidden = encoder(input_variable, lengths, answer_mask)
 
     # Create initial decoder input (start with SOS tokens for each sentence)
     decoder_input = torch.LongTensor([[SOS_token for _ in range(batch_size)]])
@@ -108,11 +110,16 @@ def trainIters(model_name, voc, pairs, encoder, decoder, encoder_optimizer, deco
     for iteration in range(start_iteration, n_iteration + 1):
         training_batch = training_batches[iteration - 1]
         # Extract fields from batch
-        input_variable, lengths, target_variable, mask, max_target_len = training_batch
+        input_variable, lengths, target_variable, mask, max_target_len, answer_mask = training_batch
+
+        #append one to lengths because of extra answer bit at embedding
+        #ones = torch.from_numpy(np.ones(batch_size))
+        #ones = ones.long()
+        #lengths = lengths + ones
 
         # Run a training iteration with batch
         loss = train(input_variable, lengths, target_variable, mask, max_target_len, encoder,
-                     decoder, embedding, encoder_optimizer, decoder_optimizer, batch_size, clip)
+                     decoder, embedding, encoder_optimizer, decoder_optimizer, batch_size, clip, answer_mask)
         print_loss += loss
 
         # Print progress
