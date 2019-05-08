@@ -8,6 +8,7 @@ import spacy
 from spacy import displacy
 from collections import Counter
 import en_core_web_sm
+from textblob import TextBlob
 
 from encoder import EncoderRNN
 from decoder import LuongAttnDecoderRNN
@@ -68,18 +69,23 @@ def generate_questions(input_text):
     qa_pairs = []
     sentences = input_text.split('.')
     input_indexes = random.sample(range(0, len(sentences) - 1), len(sentences) // 2)
-    for index in input_indexes:
+    #for index in input_indexes:
+    for index in range(0, len(sentences) - 1):
         qa_pair = qg_from_sentence(sentences[index])
         if qa_pair:
-            qa_pairs.append(qg_from_sentence(sentences[index]))
+            qa_pairs.append(qa_pair)
     return qa_pairs
 
 def qg_from_sentence(input_sentence):
     input_sentence = normalizeString(input_sentence)
     doc = nlp(input_sentence)
     answer_candidates = []
+    '''
     for entry in doc.ents:
         answer_candidates.append(entry.text)
+    '''
+    sent_blob = TextBlob(input_sentence)
+    answer_candidates = sent_blob.noun_phrases
     if len(answer_candidates) == 0:
         return None
     answer = random.choice(answer_candidates)
@@ -90,5 +96,8 @@ def qg_from_sentence(input_sentence):
     output_words = evaluate(encoder, decoder, searcher, voc, input_sentence)
     output_words[:] = [x for x in output_words if not (x == 'EOS' or x == 'PAD')]
     question = ' '.join(output_words)
+    question_sentences = question.split('?')
+    question = question_sentences[0]
+    question = question + '?'
     return (question, answer)
 
