@@ -63,7 +63,14 @@ def prepare_ans_tagged_pairs(data):
     pairs = []
     for context, context_qas in data:
         for question, answers in context_qas:
+            '''
             for ans_txt, (answer_start, answer_end) in answers:
+                tagged_context = context[:answer_end] + " " + ANSE_TAG + " " + context[answer_end:]
+                tagged_context = tagged_context[:answer_start] + " " + ANSS_TAG + " " + tagged_context[answer_start:]
+                pairs.append((tagged_context, question))
+            '''
+            if len(answers) != 0:
+                ans_txt, (answer_start, answer_end) = answers[0]
                 tagged_context = context[:answer_end] + " " + ANSE_TAG + " " + context[answer_end:]
                 tagged_context = tagged_context[:answer_start] + " " + ANSS_TAG + " " + tagged_context[answer_start:]
                 pairs.append((tagged_context, question))

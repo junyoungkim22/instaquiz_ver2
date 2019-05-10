@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+from nltk.translate.bleu_score import sentence_bleu
 
 from prepare_data import indexesFromSentence, ansSentMask
 from voc import normalizeString
@@ -81,3 +82,26 @@ def evaluateInput(encoder, decoder, searcher, voc):
 
         except KeyError:
             print("Error: Encountered unknown word.")
+
+def dev_evaluate(encoder, decoder, dev_pairs, searcher, voc):
+    encoder.eval()
+    decoder.eval()
+    bleu_scores = []
+    for pair in dev_pairs:
+        text, ans_question = pair
+        text = normalizeString(text)
+        output_words = evaluate(encoder, decoder, searcher, voc, text)
+        output_words[:] = [x for x in output_words if not (x == 'EOS' or x == 'PAD')]
+        gen_question = ' '.join(output_words)
+        gen_question = gen_question.split('?')[0] + '?'
+        bleu_score = sentence_bleu([normalizeString(ans_question).split(' ')], gen_question.split(' '), weights=[1])
+        '''
+        print(normalizeString(ans_question))
+        print(gen_question)
+        print(bleu_score)
+        print('*'*70)
+        '''
+        bleu_scores.append(bleu_score)
+    print("BLEU score average: %f" % (sum(bleu_scores) / len(bleu_scores)))
+    encoder.train()
+    decoder.train()
