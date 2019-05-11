@@ -6,7 +6,7 @@ import numpy as np
 
 from voc import MAX_LENGTH, SOS_token
 from prepare_data import batch2TrainData
-from model_config import hidden_size, device, batch_size, checkpoint_iter
+from model_config import embedding_size, hidden_size, device, batch_size, checkpoint_iter
 from train_config import clip, teacher_forcing_ratio, learning_rate, decoder_learning_ratio
 from train_config import n_iteration, print_every, save_every
 from evaluate import dev_evaluate
@@ -132,7 +132,7 @@ def trainIters(model_name, voc, train_pairs, dev_pairs, encoder, decoder, encode
 
         # Save checkpoint
         if (iteration % save_every == 0):
-            directory = os.path.join(save_dir, model_name, corpus_name, '{}-{}_{}'.format(encoder_n_layers, decoder_n_layers, hidden_size))
+            directory = os.path.join(save_dir, model_name, corpus_name, '{}-{}_{}-{}'.format(encoder_n_layers, decoder_n_layers, embedding_size, hidden_size))
             if not os.path.exists(directory):
                 os.makedirs(directory)
             torch.save({
