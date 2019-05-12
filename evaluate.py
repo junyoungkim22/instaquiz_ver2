@@ -5,7 +5,7 @@ from nltk.translate.bleu_score import sentence_bleu
 from prepare_data import indexesFromSentence, ansSentMask
 from voc import normalizeString
 from voc import MAX_LENGTH, SOS_token
-from model_config import device
+from model_config import device, unk_replace
 from squad_loader import ANSS_TAG, ANSE_TAG
 
 class GreedySearchDecoder(nn.Module):
@@ -24,19 +24,21 @@ class GreedySearchDecoder(nn.Module):
         # Initialize tensors to append decoded words to
         all_tokens = torch.zeros([0], device=device, dtype=torch.long)
         all_scores = torch.zeros([0], device=device)
+        all_attn_weights = []
         # Iteratively decode one word token at a time
         for _ in range(max_length):
             # Forward pass through decoder
-            decoder_output, decoder_hidden = self.decoder(decoder_input, decoder_hidden, encoder_outputs)
+            decoder_output, decoder_hidden, attn_weights = self.decoder(decoder_input, decoder_hidden, encoder_outputs)
             # Obtain most likely word token and its softmax score
             decoder_scores, decoder_input = torch.max(decoder_output, dim=1)
             # Record token and score
             all_tokens = torch.cat((all_tokens, decoder_input), dim=0)
             all_scores = torch.cat((all_scores, decoder_scores), dim=0)
+            all_attn_weights.append(attn_weights.detach().squeeze().cpu().numpy())
             # Prepare current token to be next decoder input (add a dimension)
             decoder_input = torch.unsqueeze(decoder_input, 0)
         # Return collections of word tokens and scores
-        return all_tokens, all_scores
+        return all_tokens, all_scores, all_attn_weights
 
 def evaluate(encoder, decoder, searcher, voc, sentence, max_length=MAX_LENGTH):
     ### Format input sentence as a batch
@@ -58,10 +60,30 @@ def evaluate(encoder, decoder, searcher, voc, sentence, max_length=MAX_LENGTH):
     lengths = lengths.to(device)
     ans_mask_input_batch = ans_mask_input_batch.to(device)
     # Decode sentence with searcher
-    tokens, scores = searcher(input_batch, lengths, max_length, ans_mask_input_batch)
+    tokens, scores, all_attn_weights = searcher(input_batch, lengths, max_length, ans_mask_input_batch)
     # indexes -> words
     decoded_words = [voc.index2word[token.item()] for token in tokens]
+    if(unk_replace):
+        decoded_words = replaceUnk(sentence, decoded_words, voc, all_attn_weights)
     return decoded_words
+
+def replaceUnk(input_sentence, output_words, voc, all_attn_weights):
+    replaced_output_words = []
+    input_words = input_sentence.split(' ')
+    for i, word in enumerate(output_words):
+        if word == 'UNK':
+            max_attn_value = max(all_attn_weights[i])
+            max_indexes = [j for j, k in enumerate(all_attn_weights[i]) if k == max_attn_value]
+            max_index = max_indexes[0]
+            if(max_index == len(input_words)):
+                break
+                #replaced_output_words.append('EOS')
+            else:
+                unk_word = input_sentence.split(' ')[max_indexes[0]]
+                replaced_output_words.append(unk_word)
+        else:
+            replaced_output_words.append(word)
+    return replaced_output_words
 
 
 def evaluateInput(encoder, decoder, searcher, voc):
@@ -98,12 +120,13 @@ def dev_evaluate(encoder, decoder, dev_pairs, searcher, voc):
         gen_question = ' '.join(output_words)
         gen_question = gen_question.split('?')[0] + '?'
         bleu_score = sentence_bleu([normalizeString(ans_question).split(' ')], gen_question.split(' '), weights=[1])
-        '''
+
+        print(text)
         print(normalizeString(ans_question))
         print(gen_question)
         print(bleu_score)
         print('*'*70)
-        '''
+
         bleu_scores.append(bleu_score)
     print("BLEU score average: %f" % (sum(bleu_scores) / len(bleu_scores)))
     encoder.train()

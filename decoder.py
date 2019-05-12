@@ -45,4 +45,4 @@ class LuongAttnDecoderRNN(nn.Module):
         output = self.out(concat_output)
         output = F.softmax(output, dim=1)
         # Return output and final hidden state
-        return output, hidden
+        return output, hidden, attn_weights

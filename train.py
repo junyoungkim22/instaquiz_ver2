@@ -55,7 +55,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
     # Forward batch of sequences through decoder one time step at a time
     if use_teacher_forcing:
         for t in range(max_target_len):
-            decoder_output, decoder_hidden = decoder(
+            decoder_output, decoder_hidden, attn_weights = decoder(
                 decoder_input, decoder_hidden, encoder_outputs
             )
             # Teacher forcing: next input is current target
@@ -67,7 +67,7 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
             n_totals += nTotal
     else:
         for t in range(max_target_len):
-            decoder_output, decoder_hidden = decoder(
+            decoder_output, decoder_hidden, attn_weights = decoder(
                 decoder_input, decoder_hidden, encoder_outputs
             )
             # No teacher forcing: next input is decoder's own current output
