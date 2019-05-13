@@ -16,6 +16,7 @@ from model_config import model_name, attn_model, hidden_size
 from model_config import encoder_n_layers, decoder_n_layers, dropout, batch_size
 from model_config import device, loadFilename, checkpoint_iter
 from model_config import save_dir, corpus_name
+from model_config import embedding_size, loadFilename
 from train_config import clip, learning_rate, decoder_learning_ratio, n_iteration
 from train_config import print_every, save_every
 from voc import Voc, normalizeString
@@ -23,17 +24,19 @@ from squad_loader import ANSS_TAG, ANSE_TAG
 from evaluate import GreedySearchDecoder, evaluate
 
 #loadFile = None
+'''
 loadFile = os.path.join(save_dir, model_name, corpus_name,
                         '{}-{}_{}'.format(encoder_n_layers, decoder_n_layers, hidden_size),
                         '{}_checkpoint.tar'.format(checkpoint_iter))
+'''
 
 voc = Voc(corpus_name)
 #load model if a loadFile is provided
-if loadFile:
+if loadFilename:
     # If loading on same machine the model was trained on
-    checkpoint = torch.load(loadFile)
+    checkpoint = torch.load(loadFilename)
     # If loading a model trained on GPU to CPU
-    #checkpoint = torch.load(loadFile, map_location=torch.device('cpu'))
+    #checkpoint = torch.load(loadFilename, map_location=torch.device('cpu'))
     encoder_sd = checkpoint['en']
     decoder_sd = checkpoint['de']
     encoder_optimizer_sd = checkpoint['en_opt']
@@ -44,13 +47,13 @@ if loadFile:
 
 print('Building encoder and decoder ...')
 # Initialize word embeddings
-embedding = nn.Embedding(voc.num_words, hidden_size)
-if loadFile:
+embedding = nn.Embedding(voc.num_words, embedding_size)
+if loadFilename:
     embedding.load_state_dict(embedding_sd)
 # Initialize encoder & decoder models
-encoder = EncoderRNN(hidden_size, embedding, encoder_n_layers, dropout)
-decoder = LuongAttnDecoderRNN(attn_model, embedding, hidden_size, voc.num_words, decoder_n_layers, dropout)
-if loadFile:
+encoder = EncoderRNN(embedding_size, hidden_size, embedding, encoder_n_layers, dropout)
+decoder = LuongAttnDecoderRNN(attn_model, embedding, embedding_size, hidden_size, voc.num_words, decoder_n_layers, dropout)
+if loadFilename:
     encoder.load_state_dict(encoder_sd)
     decoder.load_state_dict(decoder_sd)
 # Use appropriate device
