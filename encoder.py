@@ -2,12 +2,13 @@ import torch
 import torch.nn as nn
 
 class EncoderRNN(nn.Module):
-    def __init__(self, embedding_size, hidden_size, embedding, n_layers=1, dropout=0):
+    def __init__(self, embedding_size, hidden_size, embedding, use_elmo, n_layers=1, dropout=0):
         super(EncoderRNN, self).__init__()
         self.n_layers = n_layers
         self.embedding_size = embedding_size
         self.hidden_size = hidden_size
         self.embedding = embedding
+        self.use_elmo = use_elmo
 
         # Initialize GRU; the input_size and hidden_size params are both set to 'hidden_size'
         #   because our input size is a word embedding with number of features == hidden_size
@@ -17,6 +18,10 @@ class EncoderRNN(nn.Module):
     def forward(self, input_seq, input_lengths, answer_mask, hidden=None):
         # Convert word indexes to embeddings
         embedded = self.embedding(input_seq)
+
+        if self.use_elmo:
+            embedded.transpose(0, 1)    
+            print(embedded.size())
 
         # Append answer bit if part of answer (1 if part of answer, 0 if not)
         answer_mask = answer_mask.unsqueeze(2)

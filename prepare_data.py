@@ -1,7 +1,10 @@
 import torch
 import itertools
 from voc import PAD_token, EOS_token, UNK_token, normalizeString
+from voc import PAD_tag, EOS_tag
 from squad_loader import ANSS_TAG, ANSE_TAG
+from model_config import use_elmo
+from allennlp.modules.elmo import batch_to_ids
 
 def indexesFromSentence(voc, sentence):
     #return [voc.word2index[word] for word in sentence.split(' ')] + [EOS_token]
@@ -57,20 +60,43 @@ def ansSentMask(sentence):
 # Returns padded input sequence tensor and lengths
 def inputVar(l, voc):
     ansMaskList = ansMask(l)
+    answerMaskList = zeroPadding(ansMaskList)
+    answerMask = torch.FloatTensor(answerMaskList)
     no_ans_l = []
     for sentence in l:
         s1 = sentence.replace(ANSS_TAG, '')
         s2 = s1.replace(ANSE_TAG, '')
         s3 = normalizeString(s2)
         no_ans_l.append(s3)
-    indexes_batch = [indexesFromSentence(voc, sentence) for sentence in no_ans_l]
-    lengths = torch.tensor([len(indexes) for indexes in indexes_batch])
-    padList = zeroPadding(indexes_batch)
-    padVar = torch.LongTensor(padList)
-
-    answerMaskList = zeroPadding(ansMaskList)
-    answerMask = torch.FloatTensor(answerMaskList)
+    if use_elmo:
+        tokenized_sentences = []
+        max_len = 0
+        for sentence in no_ans_l:
+            tok_sent = sentence.split(' ')
+            tok_sent.append(EOS_tag)
+            tokenized_sentences.append(tok_sent)
+            if(len(tok_sent) > max_len):
+                max_len = len(tok_sent)
+        lengths = torch.tensor([len(sent) for sent in tokenized_sentences])
+        pad_tok_sentences = []
+        for sentence in tokenized_sentences:
+            pad_tok_sentences.append(sentence + [PAD_tag] * (max_len - len(sentence)))
+        char_ids = batch_to_ids(pad_tok_sentences)
+        '''
+        for sentence in pad_tok_sentences:
+            print(len(sentence))
+        print(lengths)
+        print(answerMask.size())
+        '''
+        return char_ids, lengths, answerMask
+    else:
+        indexes_batch = [indexesFromSentence(voc, sentence) for sentence in no_ans_l]
+        lengths = torch.tensor([len(indexes) for indexes in indexes_batch])
+        padList = zeroPadding(indexes_batch)
+        padVar = torch.LongTensor(padList)
+        return padVar, lengths, answerMask
     return padVar, lengths, answerMask
+
 
 # Returns padded target sequence tensor, padding mask, and max target length
 def outputVar(l, voc):

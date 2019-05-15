@@ -1,8 +1,11 @@
-import simplejson as json
 import spacy
 import sys
 import random
 import os
+try:
+    import simplejson as json
+except ImportError:
+    import json
 
 '''
 This file is taken and modified from

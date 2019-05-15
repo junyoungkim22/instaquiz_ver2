@@ -9,13 +9,18 @@ SOS_token = 1  # Start-of-sentence token
 EOS_token = 2  # End-of-sentence token
 UNK_token = 3  # Unknown word token
 
+PAD_tag = "1pad1"
+SOS_tag = "1sos1"
+EOS_tag = "1eos1"
+UNK_tag = "UNK"
+
 class Voc:
     def __init__(self, name):
         self.name = name
         self.trimmed = False
         self.word2index = {}
         self.word2count = {}
-        self.index2word = {PAD_token: "PAD", SOS_token: "SOS", EOS_token: "EOS", UNK_token: "UNK"}
+        self.index2word = {PAD_token: PAD_tag, SOS_token: SOS_tag, EOS_token: EOS_tag, UNK_token: UNK_tag}
         self.num_words = 4  # Count SOS, EOS, PAD, UNK
 
     def addSentence(self, sentence):
@@ -50,7 +55,7 @@ class Voc:
         # Reinitialize dictionaries
         self.word2index = {}
         self.word2count = {}
-        self.index2word = {PAD_token: "PAD", SOS_token: "SOS", EOS_token: "EOS", UNK_token: "UNK"}
+        self.index2word = {PAD_token: PAD_tag, SOS_token: SOS_tag, EOS_token: EOS_tag, UNK_token: UNK_tag}
         self.num_words = 4 # Count default tokens
 
         for word in keep_words:
