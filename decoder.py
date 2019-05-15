@@ -3,6 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 
 from attn import Attn
+from model_config import use_elmo
 
 class LuongAttnDecoderRNN(nn.Module):
     def __init__(self, attn_model, embedding, embedding_size, hidden_size, output_size, n_layers=1, dropout=0.1):
@@ -28,7 +29,13 @@ class LuongAttnDecoderRNN(nn.Module):
     def forward(self, input_step, last_hidden, encoder_outputs):
         # Note: we run this one step (word) at a time
         # Get embedding of current input word
+    
         embedded = self.embedding(input_step)
+
+        if use_elmo:
+            embedded = embedded['elmo_representations'][0]
+            embedded = embedded.transpose(0, 1)
+
         embedded = self.embedding_dropout(embedded)
         # Forward through unidirectional GRU
         rnn_output, hidden = self.gru(embedded, last_hidden)

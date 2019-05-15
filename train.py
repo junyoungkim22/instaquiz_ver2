@@ -3,10 +3,12 @@ import torch.nn as nn
 import random
 import os
 import numpy as np
+from allennlp.modules.elmo import batch_to_ids
+
 
 from voc import MAX_LENGTH, SOS_token
-from prepare_data import batch2TrainData
-from model_config import embedding_size, hidden_size, device, batch_size, checkpoint_iter
+from prepare_data import batch2TrainData, to_elmo_decoder_input
+from model_config import embedding_size, hidden_size, device, batch_size, checkpoint_iter, use_elmo
 from train_config import clip, teacher_forcing_ratio, learning_rate, decoder_learning_ratio
 from train_config import n_iteration, print_every, save_every
 from evaluate import dev_evaluate
@@ -20,7 +22,7 @@ def maskNLLLoss(inp, target, mask):
     loss = loss.to(device)
     return loss, nTotal.item()
 
-def train(input_variable, lengths, target_variable, mask, max_target_len, encoder, decoder, embedding,
+def train(voc, input_variable, lengths, target_variable, mask, max_target_len, encoder, decoder, embedding,
           encoder_optimizer, decoder_optimizer, batch_size, clip, answer_mask, max_length=MAX_LENGTH):
 
     # Zero gradients
@@ -46,6 +48,9 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
     decoder_input = torch.LongTensor([[SOS_token for _ in range(batch_size)]])
     decoder_input = decoder_input.to(device)
 
+    if use_elmo:
+        decoder_input = to_elmo_decoder_input(decoder_input, voc)
+
     # Set initial decoder hidden state to the encoder's final hidden state
     decoder_hidden = encoder_hidden[:decoder.n_layers]
 
@@ -60,6 +65,8 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
             )
             # Teacher forcing: next input is current target
             decoder_input = target_variable[t].view(1, -1)
+            if use_elmo:
+                decoder_input = to_elmo_decoder_input(decoder_input, voc)
             # Calculate and accumulate loss
             mask_loss, nTotal = maskNLLLoss(decoder_output, target_variable[t], mask[t])
             loss += mask_loss
@@ -73,6 +80,8 @@ def train(input_variable, lengths, target_variable, mask, max_target_len, encode
             # No teacher forcing: next input is decoder's own current output
             _, topi = decoder_output.topk(1)
             decoder_input = torch.LongTensor([[topi[i][0] for i in range(batch_size)]])
+            if use_elmo:
+                decoder_input = to_elmo_decoder_input(decoder_input, voc)
             decoder_input = decoder_input.to(device)
             # Calculate and accumulate loss
             mask_loss, nTotal = maskNLLLoss(decoder_output, target_variable[t], mask[t])
@@ -120,7 +129,7 @@ def trainIters(model_name, voc, train_pairs, dev_pairs, encoder, decoder, encode
         #lengths = lengths + ones
 
         # Run a training iteration with batch
-        loss = train(input_variable, lengths, target_variable, mask, max_target_len, encoder,
+        loss = train(voc, input_variable, lengths, target_variable, mask, max_target_len, encoder,
                      decoder, embedding, encoder_optimizer, decoder_optimizer, batch_size, clip, answer_mask)
         print_loss += loss
 

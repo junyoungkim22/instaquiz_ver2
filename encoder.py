@@ -1,8 +1,9 @@
 import torch
 import torch.nn as nn
+from model_config import use_elmo
 
 class EncoderRNN(nn.Module):
-    def __init__(self, embedding_size, hidden_size, embedding, use_elmo, n_layers=1, dropout=0):
+    def __init__(self, embedding_size, hidden_size, embedding, n_layers=1, dropout=0):
         super(EncoderRNN, self).__init__()
         self.n_layers = n_layers
         self.embedding_size = embedding_size
@@ -19,9 +20,9 @@ class EncoderRNN(nn.Module):
         # Convert word indexes to embeddings
         embedded = self.embedding(input_seq)
 
-        if self.use_elmo:
-            embedded.transpose(0, 1)    
-            print(embedded.size())
+        if use_elmo:
+            embedded = embedded['elmo_representations'][0]
+            embedded = embedded.transpose(0, 1)    
 
         # Append answer bit if part of answer (1 if part of answer, 0 if not)
         answer_mask = answer_mask.unsqueeze(2)

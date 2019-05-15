@@ -3,7 +3,7 @@ import itertools
 from voc import PAD_token, EOS_token, UNK_token, normalizeString
 from voc import PAD_tag, EOS_tag
 from squad_loader import ANSS_TAG, ANSE_TAG
-from model_config import use_elmo
+from model_config import use_elmo, device
 from allennlp.modules.elmo import batch_to_ids
 
 def indexesFromSentence(voc, sentence):
@@ -56,6 +56,14 @@ def ansSentMask(sentence):
     mask.append(0)
     return mask
 
+def to_elmo_decoder_input(decoder_input, voc):
+    index_list = decoder_input.tolist()[0]
+    word_list = []
+    for index in index_list:
+        word_list.append([voc.index2word[index]])
+    new_decoder_input = batch_to_ids(word_list)
+    new_decoder_input = new_decoder_input.to(device)
+    return new_decoder_input
 
 # Returns padded input sequence tensor and lengths
 def inputVar(l, voc):
